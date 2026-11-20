@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Loyers">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Gestion Loyers</title>
+<style>
+:root{--p:#0f766e;--p2:#115e59;--pl:#ccfbf1;--bg:#f1f5f4;--card:#fff;--tx:#0f172a;--mu:#64748b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--bd:#e2e8f0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);font-size:15px;line-height:1.35}
+#app{max-width:560px;margin:0 auto;padding:0 14px calc(90px + env(safe-area-inset-bottom))}
+.top{background:var(--p);color:#fff;margin:0 -14px 14px;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px}
+.top h1{font-size:18px;margin:0;flex:1}
+.top button{background:rgba(255,255,255,.18);color:#fff;border:0;border-radius:10px;padding:7px 11px;font-size:15px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:14px;margin:0 0 10px;color:var(--mu);text-transform:uppercase;letter-spacing:.04em}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px}
+.kpi small{color:var(--mu);display:block;font-size:12px}
+.kpi b{font-size:17px;display:block;margin-top:3px}
+.kpi.ok b{color:var(--ok)}.kpi.bad b{color:var(--bad)}.kpi.p b{color:var(--p)}
+.bar{height:10px;background:#e2e8f0;border-radius:6px;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;background:var(--p)}
+.row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border-bottom:0}
+.row .g{flex:1;min-width:0}
+.row .g b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .g small{color:var(--mu)}
+.badge{display:inline-block;border-radius:20px;padding:2px 9px;font-size:12px;font-weight:600}
+.b-paid{background:#dcfce7;color:#166534}.b-part{background:#fef3c7;color:#92400e}.b-unpaid{background:#fee2e2;color:#991b1b}.b-t{background:#e0f2fe;color:#075985}.b-m{background:#ede9fe;color:#5b21b6}
+.btn{border:0;border-radius:12px;padding:11px 14px;font-size:15px;font-weight:600;background:var(--p);color:#fff;width:100%}
+.btn.sec{background:#e2e8f0;color:var(--tx)}.btn.wa{background:#16a34a}.btn.red{background:#fee2e2;color:#991b1b}
+.btn.sm{width:auto;padding:7px 11px;font-size:13px;border-radius:10px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btns .btn{flex:1;min-width:130px}
+label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
+input,select,textarea{width:100%;border:1px solid var(--bd);border-radius:10px;padding:11px;font-size:16px;background:#fff;color:var(--tx);font-family:inherit}
+.chips{display:flex;gap:6px;overflow-x:auto;margin:10px 0}
+.chip{border:1px solid var(--bd);background:#fff;border-radius:20px;padding:6px 12px;font-size:13px;white-space:nowrap}
+.chip.on{background:var(--p);color:#fff;border-color:var(--p)}
+.mnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.mnav button{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:8px 14px;font-size:16px}
+.mnav b{font-size:16px}
+.empty{text-align:center;color:var(--mu);padding:24px 10px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom);z-index:10}
+nav .in{display:flex;max-width:560px;margin:0 auto}
+nav button{flex:1;background:none;border:0;padding:7px 2px 6px;font-size:11px;color:var(--mu);display:flex;flex-direction:column;align-items:center;gap:1px}
+nav button span{font-size:20px}
+nav button.on{color:var(--p);font-weight:700}
+.paper{background:#fff;border:1px solid var(--bd);border-radius:6px;overflow:hidden;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.paper .hd{background:var(--p);color:#fff;padding:16px}
+.paper .hd h2{margin:0;font-size:20px;color:#fff;text-transform:none;letter-spacing:0}
+.paper .hd small{opacity:.9}
+.paper .bd{padding:6px 16px 16px}
+.paper .ln{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd)}
+.paper .ln span{color:var(--mu)}.paper .ln b{text-align:right}
+.paper .amt{background:var(--pl);border-radius:10px;padding:12px;margin:12px 0;text-align:center}
+.paper .amt small{display:block;color:var(--p2)}.paper .amt b{font-size:24px;color:var(--p2)}
+.paper .ft{color:var(--mu);font-size:12px;text-align:center;margin-top:10px}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:30;max-width:90%}
+.hint{font-size:12px;color:var(--mu);margin-top:8px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<nav><div class="in">
+<button data-v="home" onclick="go('home')"><span>📊</span>Tableau</button>
+<button data-v="tenants" onclick="go('tenants')"><span>👥</span>Locataires</button>
+<button data-v="add" onclick="go('tform')"><span>➕</span>Ajouter</button>
+<button data-v="pay" onclick="go('pay')"><span>💰</span>Paiement</button>
+<button data-v="settings" onclick="go('settings')"><span>⚙️</span>Réglages</button>
+</div></nav>
+
+<script>
+'use strict';
+/* ---------- Données (stockées sur le téléphone, 100 % hors connexion) ---------- */
+const KEY='gestion-loyers-v1';
+function defaults(){return{settings:{owner:'',phone:'',address:'',currency:'FCFA',cc:'226',footer:'Merci pour votre paiement.',nextReceipt:1},tenants:[],payments:[]};}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.tenants&&d.payments){d.settings=Object.assign(defaults().settings,d.settings||{});return d;}}catch(e){}return defaults();}
+let db=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){toast('Erreur d\'enregistrement : stockage plein ?');}}
+
+/* ---------- Utilitaires ---------- */
+const $=s=>document.querySelector(s);
+const app=$('#app');
+const pad=n=>String(n).padStart(2,'0');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const MONTHS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+function curMonth(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1);}
+function todayISO(){const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function monthLabel(k){const [y,m]=k.split('-');const s=MONTHS[+m-1];return s.charAt(0).toUpperCase()+s.slice(1)+' '+y;}
+function shiftMonth(k,n){let [y,m]=k.split('-').map(Number);m+=n;while(m>12){m-=12;y++;}while(m<1){m+=12;y--;}return y+'-'+pad(m);}
+function monthsBetween(a,b){const [ay,am]=a.split('-').map(Number),[by,bm]=b.split('-').map(Number);return (by-ay)*12+(bm-am)+1;}
+function fmtDate(iso){return iso?iso.split('-').reverse().join('/'):'';}
+function money(n){n=Math.round(n||0);return String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ').replace(/^/,n<0?'-':'')+' '+db.settings.currency;}
+const typeLabel=t=>t.type==='magasin'?'Magasin':'Logement';
+const tById=id=>db.tenants.find(t=>t.id===id);
+const pById=id=>db.payments.find(p=>p.id===id);
+function toast(m){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),2600);}
+
+/* ---------- Calculs ---------- */
+function paidFor(tid,m){return db.payments.filter(p=>p.tenantId===tid&&p.month===m).reduce((a,p)=>a+p.amount,0);}
+function monthStatus(t,m){if(m<t.start)return null;const p=paidFor(t.id,m);return p>=t.rent?'paid':p>0?'part':'unpaid';}
+function stats(t){const months=Math.max(0,monthsBetween(t.start,curMonth()));const due=months*t.rent;const paid=db.payments.filter(p=>p.tenantId===t.id).reduce((a,p)=>a+p.amount,0);return{months,due,paid,balance:due-paid};}
+const STL={paid:['Payé','b-paid'],part:['Partiel','b-part'],unpaid:['Impayé','b-unpaid']};
+function badge(st){return st?`<span class="badge ${STL[st][1]}">${STL[st][0]}</span>`:'<span class="badge b-t">Pas encore</span>';}
+
+/* ---------- Navigation ---------- */
+let S={view:'home',param:null,month:curMonth(),filter:'all',q:''};
+function go(v,p){S.view=v;S.param=p==null?null:p;render();window.scrollTo(0,0);}
+function navOf(v){return({home:'home',tenants:'tenants',tenant:'tenants',tform:S.param?'tenants':'add',pay:'pay',receipt:'pay',settings:'settings'})[v];}
+function head(title,back){return `<div class="top">${back?`<button onclick="${back}">←</button>`:''}<h1>${esc(title)}</h1></div>`;}
+function render(){
+  const f={home,tenants:tenantsV,tenant:tenantV,tform:tformV,pay:payV,receipt:receiptV,settings:settingsV}[S.view];
+  app.innerHTML=f();
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===navOf(S.view)));
+}
+
+/* ---------- Tableau de bord ---------- */
+function home(){
+  const m=S.month;
+  const act=db.tenants.filter(t=>t.start<=m);
+  const rows=act.map(t=>({t,paid:paidFor(t.id,m),st:monthStatus(t,m)}));
+  const expected=act.reduce((a,t)=>a+t.rent,0);
+  const collected=rows.reduce((a,r)=>a+r.paid,0);
+  const remaining=rows.reduce((a,r)=>a+Math.max(0,r.t.rent-r.paid),0);
+  const late=rows.filter(r=>r.st!=='paid');
+  const arrears=db.tenants.reduce((a,t)=>a+Math.max(0,stats(t).balance),0);
+  const pct=expected?Math.min(100,Math.round(collected/expected*100)):0;
+  const recent=[...db.payments].sort((a,b)=>(b.date+b.createdAt).localeCompare(a.date+a.createdAt)).slice(0,5);
+  return head(db.settings.owner||'Gestion Loyers')+`
+  <div class="mnav"><button onclick="S.month=shiftMonth(S.month,-1);render()">‹</button><b>${monthLabel(m)}</b><button onclick="S.month=shiftMonth(S.month,1);render()">›</button></div>
+  <div class="grid">
+    <div class="kpi p"><small>Loyers attendus</small><b>${money(expected)}</b></div>
+    <div class="kpi ok"><small>Encaissé</small><b>${money(collected)}</b></div>
+    <div class="kpi bad"><small>Reste du mois</small><b>${money(remaining)}</b></div>
+    <div class="kpi bad"><small>Arriérés cumulés</small><b>${money(arrears)}</b></div>
+  </div>
+  <div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between"><span>Taux d'encaissement</span><b>${pct} %</b></div>
+  <div class="bar"><i style="width:${pct}%"></i></div>
+  <small style="color:var(--mu)">${rows.length-late.length} / ${rows.length} locataire(s) à jour</small></div>
+  <div class="card"><h2>À encaisser (${late.length})</h2>
+  ${late.length?late.map(r=>`<div class="row"><div class="g"><b>${esc(r.t.name)}</b><small>${typeLabel(r.t)} ${esc(r.t.unit)} · reste ${money(r.t.rent-r.paid)}</small></div>${badge(r.st)}<button class="btn sm" onclick="payFor('${r.t.id}','${m}')">Encaisser</button></div>`).join(''):`<div class="empty">${rows.length?'🎉 Tout est payé pour ce mois':'Aucun locataire pour ce mois.<br><br><button class="btn sm" onclick="go(\'tform\')">Ajouter un locataire</button>'}</div>`}
+  </div>
+  <div class="card"><h2>Derniers paiements</h2>
+  ${recent.length?recent.map(p=>{const t=tById(p.tenantId);return `<div class="row" onclick="go('receipt','${p.id}')"><div class="g"><b>${esc(t?t.name:'—')}</b><small>${monthLabel(p.month)} · ${fmtDate(p.date)}</small></div><b>${money(p.amount)}</b></div>`;}).join(''):'<div class="empty">Aucun paiement enregistré.</div>'}
+  </div>`;
+}
+
+/* ---------- Liste des locataires ---------- */
+function tenantsV(){
+  const chips=[['all','Tous'],['logement','Logements'],['magasin','Magasins'],['late','En retard']];
+  return head('Locataires')+`
+  <input type="search" placeholder="🔍 Rechercher un nom, un numéro…" value="${esc(S.q)}" oninput="S.q=this.value;$('#tlist').innerHTML=tenantList()">
+  <div class="chips">${chips.map(c=>`<button class="chip ${S.filter===c[0]?'on':''}" onclick="S.filter='${c[0]}';render()">${c[1]}</button>`).join('')}</div>
+  <div class="card" id="tlist">${tenantList()}</div>
+  <button class="btn" onclick="go('tform')">➕ Ajouter un locataire</button>`;
+}
+function tenantList(){
+  const q=S.q.trim().toLowerCase(),m=curMonth();
+  const l=db.tenants.filter(t=>{
+    if(q&&!(t.name+' '+t.unit+' '+t.phone).toLowerCase().includes(q))return false;
+    if(S.filter==='logement'||S.filter==='magasin')return t.type===S.filter;
+    if(S.filter==='late')return stats(t).balance>0;
+    return true;}).sort((a,b)=>a.name.localeCompare(b.name));
+  if(!l.length)return '<div class="empty">Aucun locataire.</div>';
+  return l.map(t=>{const s=stats(t);return `<div class="row" onclick="go('tenant','${t.id}')"><div class="g"><b>${esc(t.name)}</b><small>${typeLabel(t)} ${esc(t.unit)} · ${money(t.rent)}/mois</small></div><div style="text-align:right">${badge(monthStatus(t,m))}<div style="font-size:12px;color:${s.balance>0?'var(--bad)':'var(--ok)'}">${s.balance>0?'Dû '+money(s.balance):s.balance<0?'Avance '+money(-s.balance):'À jour'}</div></div></div>`;}).join('');
+}
+
+/* ---------- Fiche locataire ---------- */
+function tenantV(){
+  const t=tById(S.param);if(!t){return head('Locataire','go(\'tenants\')')+'<div class="empty">Introuvable.</div>';}
+  const s=stats(t),pays=db.payments.filter(p=>p.tenantId===t.id).sort((a,b)=>(b.date+b.createdAt).localeCompare(a.date+a.createdAt));
+  return head(t.name,"go('tenants')")+`
+  <div class="card">
+    <div class="ln" style="display:flex;justify-content:space-between"><span>${typeLabel(t)} <b>${esc(t.unit)}</b></span>${badge(monthStatus(t,curMonth()))}</div>
+    <p style="margin:8px 0 0">📞 ${esc(t.phone)||'<i>numéro non renseigné</i>'}<br>💵 Loyer : <b>${money(t.rent)}</b>/mois<br>📅 Depuis : ${monthLabel(t.start)}${t.note?`<br>📝 ${esc(t.note)}`:''}</p>
+    <div class="btns"><button class="btn" onclick="payFor('${t.id}')">💰 Encaisser</button><button class="btn sec" onclick="go('tform','${t.id}')">✏️ Modifier</button></div>
+  </div>
+  <div class="grid">
+    <div class="kpi"><small>Total dû à ce jour</small><b>${money(s.due)}</b></div>
+    <div class="kpi ok"><small>Total payé</small><b>${money(s.paid)}</b></div>
+  </div>
+  <div class="kpi ${s.balance>0?'bad':'ok'}" style="margin:10px 0 12px"><small>${s.balance>0?'Reste à payer (arriéré)':s.balance<0?'Avance versée':'Situation'}</small><b>${s.balance===0?'À jour ✔':money(Math.abs(s.balance))}</b></div>
+  <div class="card"><h2>Historique des paiements</h2>
+  ${pays.length?pays.map(p=>`<div class="row"><div class="g" onclick="go('receipt','${p.id}')"><b>${money(p.amount)}</b><small>${monthLabel(p.month)} · ${fmtDate(p.date)} · ${esc(p.no)}</small></div><button class="btn sm sec" onclick="go('receipt','${p.id}')">🧾 Reçu</button><button class="btn sm red" onclick="delPay('${p.id}')">🗑</button></div>`).join(''):'<div class="empty">Aucun paiement.</div>'}
+  </div>`;
+}
+
+/* ---------- Ajout / modification locataire ---------- */
+function tformV(){
+  const t=S.param?tById(S.param):null,v=t||{name:'',phone:'',type:'logement',unit:'',rent:'',start:curMonth(),note:''};
+  return head(t?'Modifier le locataire':'Nouveau locataire',t?`go('tenant','${t.id}')`:"go('tenants')")+`
+  <div class="card">
+  <label>Nom complet *</label><input id="f_name" value="${esc(v.name)}" autocomplete="off">
+  <label>Téléphone WhatsApp (ex : 70 12 34 56)</label><input id="f_phone" type="tel" value="${esc(v.phone)}">
+  <label>Type de bien</label><select id="f_type"><option value="logement" ${v.type==='logement'?'selected':''}>Logement</option><option value="magasin" ${v.type==='magasin'?'selected':''}>Magasin</option></select>
+  <label>Désignation / numéro (ex : Chambre 3, Boutique A) *</label><input id="f_unit" value="${esc(v.unit)}">
+  <label>Loyer mensuel (${esc(db.settings.currency)}) *</label><input id="f_rent" type="number" inputmode="numeric" min="0" value="${esc(v.rent)}">
+  <label>Début de la location *</label><input id="f_start" type="month" value="${esc(v.start)}">
+  <label>Note (facultatif)</label><textarea id="f_note" rows="2">${esc(v.note)}</textarea>
+  <div class="btns"><button class="btn" onclick="saveTenant('${t?t.id:''}')">💾 Enregistrer</button></div>
+  ${t?`<div class="btns"><button class="btn red" onclick="delTenant('${t.id}')">Supprimer ce locataire</button></div>`:''}
+  </div>`;
+}
+function saveTenant(id){
+  const g=i=>$('#'+i).value.trim();
+  const d={name:g('f_name'),phone:g('f_phone'),type:g('f_type'),unit:g('f_unit'),rent:Math.round(+g('f_rent')),start:g('f_start'),note:g('f_note')};
+  if(!d.name||!d.unit||!(d.rent>0)||!d.start){toast('Remplissez nom, bien, loyer et début.');return;}
+  if(id){Object.assign(tById(id),d);}else{id=uid();db.tenants.push(Object.assign({id,createdAt:Date.now()},d));}
+  save();toast('Locataire enregistré ✔');go('tenant',id);
+}
+function delTenant(id){const t=tById(id);if(!confirm('Supprimer '+t.name+' et tous ses paiements ? Cette action est définitive.'))return;db.tenants=db.tenants.filter(x=>x.id!==id);db.payments=db.payments.filter(p=>p.tenantId!==id);save();go('tenants');}
+function delPay(id){if(!confirm('Supprimer ce paiement et son reçu ?'))return;db.payments=db.payments.filter(p=>p.id!==id);save();render();}
+
+/* ---------- Paiement ---------- */
+let payPre=null;
+function payFor(tid,m){payPre={tid,m:m||curMonth()};go('pay');}
+function payV(){
+  if(!db.tenants.length)return head('Paiement')+'<div class="empty card">Ajoutez d\'abord un locataire.<br><br><button class="btn" onclick="go(\'tform\')">➕ Ajouter un locataire</button></div>';
+  const pre=payPre||{tid:db.tenants[0].id,m:curMonth()};payPre=null;
+  const recent=[...db.payments].sort((a,b)=>(b.date+b.createdAt).localeCompare(a.date+a.createdAt)).slice(0,8);
+  setTimeout(payDefaults,0);
+  return head('Enregistrer un paiement')+`
+  <div class="card">
+  <label>Locataire</label><select id="p_t" onchange="payDefaults()">${[...db.tenants].sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<option value="${t.id}" ${t.id===pre.tid?'selected':''}>${esc(t.name)} — ${esc(t.unit)}</option>`).join('')}</select>
+  <label>Mois réglé</label><input id="p_m" type="month" value="${pre.m}" onchange="payDefaults()">
+  <label>Montant reçu (${esc(db.settings.currency)})</label><input id="p_a" type="number" inputmode="numeric" min="1">
+  <div class="hint" id="p_h"></div>
+  <label>Date du paiement</label><input id="p_d" type="date" value="${todayISO()}">
+  <label>Mode de paiement</label><select id="p_mode"><option>Espèces</option><option>Mobile Money</option><option>Virement</option><option>Chèque</option></select>
+  <label>Remarque (facultatif)</label><input id="p_n">
+  <div class="btns"><button class="btn" onclick="savePay()">✔ Enregistrer et créer le reçu</button></div>
+  </div>
+  <div class="card"><h2>Derniers paiements</h2>${recent.length?recent.map(p=>{const t=tById(p.tenantId);return `<div class="row" onclick="go('receipt','${p.id}')"><div class="g"><b>${esc(t?t.name:'—')}</b><small>${monthLabel(p.month)} · ${fmtDate(p.date)}</small></div><b>${money(p.amount)}</b><span>🧾</span></div>`;}).join(''):'<div class="empty">Aucun paiement.</div>'}</div>`;
+}
+function payDefaults(){
+  const t=tById($('#p_t')&&$('#p_t').value);if(!t)return;const m=$('#p_m').value||curMonth();
+  const paid=paidFor(t.id,m),rest=Math.max(0,t.rent-paid);
+  $('#p_a').value=rest||t.rent;
+  $('#p_h').textContent='Loyer : '+money(t.rent)+' · déjà payé pour '+monthLabel(m)+' : '+money(paid)+' · reste : '+money(rest);
+}
+function savePay(){
+  const t=tById($('#p_t').value),amount=Math.round(+$('#p_a').value),m=$('#p_m').value,d=$('#p_d').value;
+  if(!t||!(amount>0)||!m||!d){toast('Vérifiez le montant, le mois et la date.');return;}
+  const s=db.settings,y=d.slice(0,4);
+  const p={id:uid(),no:'R-'+y+'-'+String(s.nextReceipt).padStart(4,'0'),tenantId:t.id,month:m,amount,date:d,method:$('#p_mode').value,note:$('#p_n').value.trim(),createdAt:Date.now(),balanceAfter:0};
+  s.nextReceipt++;db.payments.push(p);p.balanceAfter=stats(t).balance;save();toast('Paiement enregistré ✔');go('receipt',p.id);
+}
+
+/* ---------- Reçu ---------- */
+function receiptV(){
+  const p=pById(S.param),t=p&&tById(p.tenantId);if(!p||!t)return head('Reçu',"go('pay')")+'<div class="empty">Reçu introuvable.</div>';
+  const s=db.settings;
+  return head('Reçu '+p.no,"go('tenant','"+t.id+"')")+`
+  <div class="paper"><div class="hd"><h2>REÇU DE PAIEMENT</h2><small>N° ${esc(p.no)}${s.owner?' · '+esc(s.owner):''}</small></div>
+  <div class="bd">
+   <div class="ln"><span>Date</span><b>${fmtDate(p.date)}</b></div>
+   <div class="ln"><span>Reçu de</span><b>${esc(t.name)}</b></div>
+   <div class="ln"><span>Bien loué</span><b>${typeLabel(t)} ${esc(t.unit)}</b></div>
+   <div class="ln"><span>Période réglée</span><b>${monthLabel(p.month)}</b></div>
+   <div class="ln"><span>Mode de paiement</span><b>${esc(p.method)}</b></div>
+   ${p.note?`<div class="ln"><span>Remarque</span><b>${esc(p.note)}</b></div>`:''}
+   <div class="amt"><small>MONTANT REÇU</small><b>${money(p.amount)}</b></div>
+   <div class="ln" style="border:0"><span>${p.balanceAfter>0?'Reste à payer (arriéré)':p.balanceAfter<0?'Avance':'Situation'}</span><b style="color:${p.balanceAfter>0?'var(--bad)':'var(--ok)'}">${p.balanceAfter===0?'À jour ✔':money(Math.abs(p.balanceAfter))}</b></div>
+   <div class="ft">${esc(s.footer)}${s.phone?'<br>'+esc(s.phone):''}${s.address?'<br>'+esc(s.address):''}</div>
+  </div></div>
+  <div class="btns"><button class="btn wa" onclick="sendWA('${p.id}')">💬 Envoyer sur WhatsApp</button><button class="btn" onclick="sharePdf('${p.id}')">📄 Partager le PDF</button></div>
+  <div class="btns"><button class="btn sec" onclick="downloadPdf('${p.id}')">⬇️ Télécharger le PDF</button></div>
+  <p class="hint">« Envoyer sur WhatsApp » ouvre la conversation avec ${esc(t.phone||'le numéro du locataire (à renseigner)')} avec le message du reçu. « Partager le PDF » ouvre le menu de partage : choisissez WhatsApp pour joindre le fichier PDF.</p>`;
+}
+function waNumber(raw){
+  const cc=(db.settings.cc||'').replace(/\D/g,'');let r=String(raw||'').trim();
+  if(!r)return '';let d=r.replace(/\D/g,'');
+  if(r.startsWith('+'))return d;
+  if(d.startsWith('00'))return d.slice(2);
+  if(cc&&d.startsWith(cc)&&d.length>=cc.length+7)return d;
+  return cc+d.replace(/^0+/,'');
+}
+function receiptMsg(p,t){
+  const s=db.settings;
+  return `*REÇU DE PAIEMENT* N° ${p.no}\n\nBonjour ${t.name},\nNous accusons réception de *${money(p.amount)}* pour le loyer de ${monthLabel(p.month)} (${typeLabel(t)} ${t.unit}).\n\n📅 Date : ${fmtDate(p.date)}\n💳 Mode : ${p.method}\n`+
+   (p.balanceAfter>0?`⚠️ Reste à payer : ${money(p.balanceAfter)}\n`:p.balanceAfter<0?`✅ Avance : ${money(-p.balanceAfter)}\n`:`✅ Votre compte est à jour\n`)+
+   `\n${s.footer}${s.owner?'\n— '+s.owner:''}${s.phone?'\n'+s.phone:''}`;
+}
+function sendWA(id){
+  const p=pById(id),t=tById(p.tenantId),n=waNumber(t.phone);
+  if(!n){toast('Ajoutez le numéro WhatsApp du locataire.');go('tform',t.id);return;}
+  window.open('https://wa.me/'+n+'?text='+encodeURIComponent(receiptMsg(p,t)),'_blank');
+}
+
+/* ---------- Génération PDF (sans bibliothèque, fonctionne hors connexion) ---------- */
+const L1={'’':"'",'‘':"'",'“':'"','”':'"','–':'-','—':'-','…':'...','€':'\x80','œ':'\x9c','Œ':'\x8c','✔':'v'};
+function l1(s){return String(s).replace(/[\u202f\u00a0]/g,' ').replace(/[^\x00-\xff]/g,c=>L1[c]||'?');}
+function pe(s){return l1(s).replace(/[\\()]/g,m=>'\\'+m);}
+function buildPdf(draw){
+  let s='';
+  const c={
+    rect(x,y,w,h,rgb){s+=`${rgb.join(' ')} rg ${x} ${y} ${w} ${h} re f\n`;},
+    line(x1,y1,x2,y2,rgb,w){s+=`${(rgb||[.85,.88,.9]).join(' ')} RG ${w||0.8} w ${x1} ${y1} m ${x2} ${y2} l S\n`;},
+    text(x,y,size,str,o){o=o||{};s+=`BT ${(o.color||[0,0,0]).join(' ')} rg /${o.bold?'F2':'F1'} ${size} Tf ${x} ${y} Td (${pe(str)}) Tj ET\n`;}
+  };
+  draw(c);
+  const ob=[];
+  ob[1]='<< /Type /Catalog /Pages 2 0 R >>';
+  ob[2]='<< /Type /Pages /Kids [3 0 R] /Count 1 >>';
+  ob[3]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>';
+  ob[4]=`<< /Length ${s.length} >>\nstream\n${s}endstream`;
+  ob[5]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+  ob[6]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+  let out='%PDF-1.4\n';const off=[];
+  for(let i=1;i<=6;i++){off[i]=out.length;out+=`${i} 0 obj\n${ob[i]}\nendobj\n`;}
+  const x=out.length;
+  out+='xref\n0 7\n0000000000 65535 f \n'+off.slice(1).map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+`trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`;
+  const u=new Uint8Array(out.length);for(let i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;
+  return u;
+}
+function receiptPdf(p,t){
+  const s=db.settings,TEAL=[.059,.463,.431],GRAY=[.4,.45,.5],cut=(x,n)=>{x=String(x);return x.length>n?x.slice(0,n-1)+'…':x;};
+  return buildPdf(c=>{
+    c.rect(0,742,595,100,TEAL);
+    c.text(40,800,26,'REÇU DE PAIEMENT',{bold:1,color:[1,1,1]});
+    c.text(40,776,12,cut(s.owner||'Gestion Loyers',60),{color:[1,1,1]});
+    c.text(40,756,11,'N° '+p.no,{color:[1,1,1],bold:1});
+    const rows=[['Date de paiement',fmtDate(p.date)],['Reçu de',cut(t.name,42)],['Bien loué',cut(typeLabel(t)+' '+t.unit,42)],['Période réglée',monthLabel(p.month)],['Mode de paiement',p.method]];
+    if(p.note)rows.push(['Remarque',cut(p.note,50)]);
+    let y=700;
+    rows.forEach(r=>{c.text(40,y,10,r[0].toUpperCase(),{color:GRAY});c.text(40,y-18,14,r[1],{bold:1});c.line(40,y-30,555,y-30);y-=52;});
+    c.rect(40,y-52,515,64,[.8,.984,.945]);
+    c.text(56,y-8,10,'MONTANT REÇU',{color:[.067,.369,.349],bold:1});
+    c.text(56,y-38,26,money(p.amount),{bold:1,color:[.067,.369,.349]});
+    y-=84;
+    const lbl=p.balanceAfter>0?'Reste à payer (arriéré)':p.balanceAfter<0?'Avance versée':'Situation du compte';
+    c.text(40,y,10,lbl.toUpperCase(),{color:GRAY});
+    c.text(40,y-20,15,p.balanceAfter===0?'À jour':money(Math.abs(p.balanceAfter)),{bold:1,color:p.balanceAfter>0?[.78,.1,.1]:[.08,.55,.2]});
+    c.line(360,170,555,170,[.3,.3,.3],0.8);
+    c.text(395,155,10,'Signature du bailleur',{color:GRAY});
+    c.line(40,100,555,100);
+    let fy=84;
+    [s.footer,s.phone,s.address].filter(Boolean).forEach(x=>{c.text(40,fy,10,cut(x,90),{color:GRAY});fy-=15;});
+    c.text(40,24,8,'Document généré par Gestion Loyers',{color:[.65,.7,.75]});
+  });
+}
+function pdfFile(id){const p=pById(id),t=tById(p.tenantId);const name='Recu-'+p.no+'-'+t.name.replace(/[^\w]+/g,'_')+'.pdf';return {p,t,name,blob:new Blob([receiptPdf(p,t)],{type:'application/pdf'})};}
+function downloadPdf(id){const f=pdfFile(id),a=document.createElement('a');a.href=URL.createObjectURL(f.blob);a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
+async function sharePdf(id){
+  const f=pdfFile(id),file=new File([f.blob],f.name,{type:'application/pdf'});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Reçu '+f.p.no,text:'Reçu de paiement '+f.p.no});}
+    else{downloadPdf(id);toast('Partage indisponible : PDF téléchargé.');}
+  }catch(e){if(e&&e.name!=='AbortError'){downloadPdf(id);toast('PDF téléchargé.');}}
+}
+
+/* ---------- Réglages ---------- */
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(S.view==='settings')render();});
+function settingsV(){
+  const s=db.settings,installed=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  return head('Paramètres')+`
+  <div class="card"><h2>Bailleur / entreprise</h2>
+  <label>Nom (affiché sur les reçus)</label><input id="s_owner" value="${esc(s.owner)}">
+  <label>Téléphone</label><input id="s_phone" type="tel" value="${esc(s.phone)}">
+  <label>Adresse</label><input id="s_addr" value="${esc(s.address)}">
+  <label>Devise</label><input id="s_cur" value="${esc(s.currency)}">
+  <label>Indicatif pays pour WhatsApp (ex : 226 Burkina Faso)</label><input id="s_cc" type="tel" value="${esc(s.cc)}">
+  <label>Message en bas du reçu</label><input id="s_foot" value="${esc(s.footer)}">
+  <label>Prochain numéro de reçu</label><input id="s_next" type="number" min="1" value="${s.nextReceipt}">
+  <div class="btns"><button class="btn" onclick="saveSettings()">💾 Enregistrer</button></div></div>
+  <div class="card"><h2>Application</h2>
+  ${installed?'<p>✔ Application installée sur cet appareil.</p>':deferredPrompt?'<button class="btn" onclick="installApp()">📲 Installer l\'application</button>':'<p class="hint" style="margin:0">Pour installer : menu du navigateur ⋮ → « Installer l\'application » / « Ajouter à l\'écran d\'accueil » (iPhone : Partager → Sur l\'écran d\'accueil).</p>'}
+  </div>
+  <div class="card"><h2>Sauvegarde des données</h2>
+  <p class="hint" style="margin-top:0">Les données restent sur ce téléphone. Faites une sauvegarde régulière (changement de téléphone, nettoyage du navigateur…).</p>
+  <div class="btns"><button class="btn sec" onclick="exportData()">⬆️ Exporter</button><button class="btn sec" onclick="$('#imp').click()">⬇️ Importer</button></div>
+  <input id="imp" type="file" accept="application/json,.json" style="display:none" onchange="importData(this.files[0])">
+  <div class="btns"><button class="btn red" onclick="resetAll()">Effacer toutes les données</button></div></div>`;
+}
+function saveSettings(){
+  const s=db.settings,g=i=>$('#'+i).value.trim();
+  Object.assign(s,{owner:g('s_owner'),phone:g('s_phone'),address:g('s_addr'),currency:g('s_cur')||'FCFA',cc:g('s_cc'),footer:g('s_foot'),nextReceipt:Math.max(1,Math.round(+g('s_next'))||1)});
+  save();toast('Paramètres enregistrés ✔');
+}
+async function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;render();}
+function exportData(){const b=new Blob([JSON.stringify(db,null,1)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='sauvegarde-loyers-'+todayISO()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
+function importData(f){
+  if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.tenants||!d.payments)throw 0;if(!confirm('Remplacer les données actuelles par cette sauvegarde ?'))return;db=Object.assign(defaults(),d);db.settings=Object.assign(defaults().settings,d.settings||{});save();toast('Sauvegarde restaurée ✔');go('home');}catch(e){toast('Fichier invalide.');}};
+  r.readAsText(f);
+}
+function resetAll(){if(!confirm('Effacer TOUS les locataires et paiements ?'))return;if(!confirm('Dernière confirmation : action irréversible.'))return;db=defaults();save();go('home');}
+
+/* ---------- Démarrage ---------- */
+render();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+</script>
+</body>
+</html>

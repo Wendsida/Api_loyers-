@@ -11,6 +11,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Gestion Loyers</title>
+<script src="firebase-config.js"></script>
 <style>
 :root{--p:#0f766e;--p2:#115e59;--pl:#ccfbf1;--bg:#f1f5f4;--card:#fff;--tx:#0f172a;--mu:#64748b;--ok:#16a34a;--warn:#d97706;--bad:#dc2626;--bd:#e2e8f0}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -66,6 +67,10 @@ nav button.on{color:var(--p);font-weight:700}
 .paper .ft{color:var(--mu);font-size:12px;text-align:center;margin-top:10px}
 .toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;z-index:30;max-width:90%}
 .hint{font-size:12px;color:var(--mu);margin-top:8px}
+body.viewer .adminonly{display:none!important}
+body.loggedout nav{display:none}
+#net{font-size:13px;opacity:.9}
+.login{margin-top:30px}
 </style>
 </head>
 <body>
@@ -73,8 +78,8 @@ nav button.on{color:var(--p);font-weight:700}
 <nav><div class="in">
 <button data-v="home" onclick="go('home')"><span>📊</span>Tableau</button>
 <button data-v="tenants" onclick="go('tenants')"><span>👥</span>Locataires</button>
-<button data-v="add" onclick="go('tform')"><span>➕</span>Ajouter</button>
-<button data-v="pay" onclick="go('pay')"><span>💰</span>Paiement</button>
+<button class="adminonly" data-v="add" onclick="go('tform')"><span>➕</span>Ajouter</button>
+<button class="adminonly" data-v="pay" onclick="go('pay')"><span>💰</span>Paiement</button>
 <button data-v="settings" onclick="go('settings')"><span>⚙️</span>Réglages</button>
 </div></nav>
 
@@ -85,7 +90,9 @@ const KEY='gestion-loyers-v1';
 function defaults(){return{settings:{owner:'',phone:'',address:'',currency:'FCFA',cc:'226',footer:'Merci pour votre paiement.',nextReceipt:1},tenants:[],payments:[]};}
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.tenants&&d.payments){d.settings=Object.assign(defaults().settings,d.settings||{});return d;}}catch(e){}return defaults();}
 let db=load();
-function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){toast('Erreur d\'enregistrement : stockage plein ?');}}
+let role='admin',CLOUD=null;
+function persistLocal(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){toast('Erreur d\'enregistrement : stockage plein ?');}}
+function save(){persistLocal();if(CLOUD&&role==='admin')pushDiff();}
 
 /* ---------- Utilitaires ---------- */
 const $=s=>document.querySelector(s);
@@ -115,11 +122,11 @@ function badge(st){return st?`<span class="badge ${STL[st][1]}">${STL[st][0]}</s
 
 /* ---------- Navigation ---------- */
 let S={view:'home',param:null,month:curMonth(),filter:'all',q:''};
-function go(v,p){S.view=v;S.param=p==null?null:p;render();window.scrollTo(0,0);}
+function go(v,p){if(CLOUD_ON&&!authUser&&v!=='login')v='login';if(role!=='admin'&&(v==='tform'||v==='pay')){v='home';p=null;}S.view=v;S.param=p==null?null:p;render();window.scrollTo(0,0);}
 function navOf(v){return({home:'home',tenants:'tenants',tenant:'tenants',tform:S.param?'tenants':'add',pay:'pay',receipt:'pay',settings:'settings'})[v];}
-function head(title,back){return `<div class="top">${back?`<button onclick="${back}">←</button>`:''}<h1>${esc(title)}</h1></div>`;}
+function head(title,back){return `<div class="top">${back?`<button onclick="${back}">←</button>`:''}<h1>${esc(title)}</h1>${netBadge()}</div>`;}
 function render(){
-  const f={home,tenants:tenantsV,tenant:tenantV,tform:tformV,pay:payV,receipt:receiptV,settings:settingsV}[S.view];
+  const f={login:loginV,home,tenants:tenantsV,tenant:tenantV,tform:tformV,pay:payV,receipt:receiptV,settings:settingsV}[S.view];
   app.innerHTML=f();
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===navOf(S.view)));
 }
@@ -148,7 +155,7 @@ function home(){
   <div class="bar"><i style="width:${pct}%"></i></div>
   <small style="color:var(--mu)">${rows.length-late.length} / ${rows.length} locataire(s) à jour</small></div>
   <div class="card"><h2>À encaisser (${late.length})</h2>
-  ${late.length?late.map(r=>`<div class="row"><div class="g"><b>${esc(r.t.name)}</b><small>${typeLabel(r.t)} ${esc(r.t.unit)} · reste ${money(r.t.rent-r.paid)}</small></div>${badge(r.st)}<button class="btn sm" onclick="payFor('${r.t.id}','${m}')">Encaisser</button></div>`).join(''):`<div class="empty">${rows.length?'🎉 Tout est payé pour ce mois':'Aucun locataire pour ce mois.<br><br><button class="btn sm" onclick="go(\'tform\')">Ajouter un locataire</button>'}</div>`}
+  ${late.length?late.map(r=>`<div class="row"><div class="g"><b>${esc(r.t.name)}</b><small>${typeLabel(r.t)} ${esc(r.t.unit)} · reste ${money(r.t.rent-r.paid)}</small></div>${badge(r.st)}<button class="btn sm adminonly" onclick="payFor('${r.t.id}','${m}')">Encaisser</button></div>`).join(''):`<div class="empty">${rows.length?'🎉 Tout est payé pour ce mois':'Aucun locataire pour ce mois.<br><br><button class="btn sm adminonly" onclick="go(\'tform\')">Ajouter un locataire</button>'}</div>`}
   </div>
   <div class="card"><h2>Derniers paiements</h2>
   ${recent.length?recent.map(p=>{const t=tById(p.tenantId);return `<div class="row" onclick="go('receipt','${p.id}')"><div class="g"><b>${esc(t?t.name:'—')}</b><small>${monthLabel(p.month)} · ${fmtDate(p.date)}</small></div><b>${money(p.amount)}</b></div>`;}).join(''):'<div class="empty">Aucun paiement enregistré.</div>'}
@@ -162,7 +169,7 @@ function tenantsV(){
   <input type="search" placeholder="🔍 Rechercher un nom, un numéro…" value="${esc(S.q)}" oninput="S.q=this.value;$('#tlist').innerHTML=tenantList()">
   <div class="chips">${chips.map(c=>`<button class="chip ${S.filter===c[0]?'on':''}" onclick="S.filter='${c[0]}';render()">${c[1]}</button>`).join('')}</div>
   <div class="card" id="tlist">${tenantList()}</div>
-  <button class="btn" onclick="go('tform')">➕ Ajouter un locataire</button>`;
+  <button class="btn adminonly" onclick="go('tform')">➕ Ajouter un locataire</button>`;
 }
 function tenantList(){
   const q=S.q.trim().toLowerCase(),m=curMonth();
@@ -183,7 +190,7 @@ function tenantV(){
   <div class="card">
     <div class="ln" style="display:flex;justify-content:space-between"><span>${typeLabel(t)} <b>${esc(t.unit)}</b></span>${badge(monthStatus(t,curMonth()))}</div>
     <p style="margin:8px 0 0">📞 ${esc(t.phone)||'<i>numéro non renseigné</i>'}<br>💵 Loyer : <b>${money(t.rent)}</b>/mois<br>📅 Depuis : ${monthLabel(t.start)}${t.note?`<br>📝 ${esc(t.note)}`:''}</p>
-    <div class="btns"><button class="btn" onclick="payFor('${t.id}')">💰 Encaisser</button><button class="btn sec" onclick="go('tform','${t.id}')">✏️ Modifier</button></div>
+    <div class="btns adminonly"><button class="btn" onclick="payFor('${t.id}')">💰 Encaisser</button><button class="btn sec" onclick="go('tform','${t.id}')">✏️ Modifier</button></div>
   </div>
   <div class="grid">
     <div class="kpi"><small>Total dû à ce jour</small><b>${money(s.due)}</b></div>
@@ -191,7 +198,7 @@ function tenantV(){
   </div>
   <div class="kpi ${s.balance>0?'bad':'ok'}" style="margin:10px 0 12px"><small>${s.balance>0?'Reste à payer (arriéré)':s.balance<0?'Avance versée':'Situation'}</small><b>${s.balance===0?'À jour ✔':money(Math.abs(s.balance))}</b></div>
   <div class="card"><h2>Historique des paiements</h2>
-  ${pays.length?pays.map(p=>`<div class="row"><div class="g" onclick="go('receipt','${p.id}')"><b>${money(p.amount)}</b><small>${monthLabel(p.month)} · ${fmtDate(p.date)} · ${esc(p.no)}</small></div><button class="btn sm sec" onclick="go('receipt','${p.id}')">🧾 Reçu</button><button class="btn sm red" onclick="delPay('${p.id}')">🗑</button></div>`).join(''):'<div class="empty">Aucun paiement.</div>'}
+  ${pays.length?pays.map(p=>`<div class="row"><div class="g" onclick="go('receipt','${p.id}')"><b>${money(p.amount)}</b><small>${monthLabel(p.month)} · ${fmtDate(p.date)} · ${esc(p.no)}</small></div><button class="btn sm sec" onclick="go('receipt','${p.id}')">🧾 Reçu</button><button class="btn sm red adminonly" onclick="delPay('${p.id}')">🗑</button></div>`).join(''):'<div class="empty">Aucun paiement.</div>'}
   </div>`;
 }
 
@@ -364,8 +371,8 @@ let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(S.view==='settings')render();});
 function settingsV(){
   const s=db.settings,installed=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
-  return head('Paramètres')+`
-  <div class="card"><h2>Bailleur / entreprise</h2>
+  return head('Paramètres')+accountCard()+`
+  <div class="card adminonly"><h2>Bailleur / entreprise</h2>
   <label>Nom (affiché sur les reçus)</label><input id="s_owner" value="${esc(s.owner)}">
   <label>Téléphone</label><input id="s_phone" type="tel" value="${esc(s.phone)}">
   <label>Adresse</label><input id="s_addr" value="${esc(s.address)}">
@@ -377,7 +384,7 @@ function settingsV(){
   <div class="card"><h2>Application</h2>
   ${installed?'<p>✔ Application installée sur cet appareil.</p>':deferredPrompt?'<button class="btn" onclick="installApp()">📲 Installer l\'application</button>':'<p class="hint" style="margin:0">Pour installer : menu du navigateur ⋮ → « Installer l\'application » / « Ajouter à l\'écran d\'accueil » (iPhone : Partager → Sur l\'écran d\'accueil).</p>'}
   </div>
-  <div class="card"><h2>Sauvegarde des données</h2>
+  <div class="card adminonly"><h2>Sauvegarde des données</h2>
   <p class="hint" style="margin-top:0">Les données restent sur ce téléphone. Faites une sauvegarde régulière (changement de téléphone, nettoyage du navigateur…).</p>
   <div class="btns"><button class="btn sec" onclick="exportData()">⬆️ Exporter</button><button class="btn sec" onclick="$('#imp').click()">⬇️ Importer</button></div>
   <input id="imp" type="file" accept="application/json,.json" style="display:none" onchange="importData(this.files[0])">
@@ -397,8 +404,146 @@ function importData(f){
 }
 function resetAll(){if(!confirm('Effacer TOUS les locataires et paiements ?'))return;if(!confirm('Dernière confirmation : action irréversible.'))return;db=defaults();save();go('home');}
 
+
+/* ---------- Cloud (Firebase) : comptes, rôles et synchronisation ---------- */
+const FB_BASE='https://www.gstatic.com/firebasejs/10.14.1/';
+const cfg=window.FIREBASE_CONFIG||{};
+const CLOUD_ON=!!(cfg.apiKey&&cfg.projectId);
+const ADMINS=(window.ADMIN_EMAILS||[]).map(e=>String(e).toLowerCase());
+let authUser=null,lastSync=null,unsubs=[];
+const SESS='gl-session';
+const sj=o=>JSON.stringify(o,Object.keys(o).sort());
+const pushed={tenants:{},payments:{},settings:''};
+function roleOf(email){return ADMINS.includes(String(email||'').toLowerCase())?'admin':'viewer';}
+function applyRole(){document.body.classList.toggle('viewer',role!=='admin');document.body.classList.toggle('loggedout',CLOUD_ON&&!authUser);}
+function netText(){return (navigator.onLine?'☁️':'📴')+(role==='admin'?'':' 👁');}
+function netBadge(){return CLOUD_ON?`<span id="net">${netText()}</span>`:'';}
+function updateNet(){const n=$('#net');if(n)n.textContent=netText();}
+function authMsg(e){const c=(e&&e.code)||'';
+  if(/invalid-credential|user-not-found|wrong-password|invalid-email/.test(c))return 'E-mail ou mot de passe incorrect.';
+  if(/network/.test(c))return 'Pas de connexion internet.';
+  if(/too-many/.test(c))return 'Trop d\'essais. Réessayez dans quelques minutes.';
+  return 'Connexion impossible ('+(c||'erreur')+').';}
+
+/* Envoie vers le serveur uniquement ce qui a changé (admin). Hors connexion, Firestore met les écritures en file d'attente. */
+function pushDiff(){
+  if(!CLOUD||role!=='admin')return;
+  const {fs,F}=CLOUD,ops=[];
+  for(const col of ['tenants','payments']){
+    const cur={};db[col].forEach(x=>{cur[x.id]=sj(x);});
+    for(const id in cur)if(pushed[col][id]!==cur[id]){ops.push(['set',col,id,JSON.parse(cur[id])]);pushed[col][id]=cur[id];}
+    for(const id in pushed[col])if(!(id in cur)){ops.push(['del',col,id]);delete pushed[col][id];}
+  }
+  const ss=sj(db.settings);
+  if(pushed.settings!==ss){ops.push(['set','meta','settings',JSON.parse(ss)]);pushed.settings=ss;}
+  for(let i=0;i<ops.length;i+=400){
+    const b=F.writeBatch(fs);
+    ops.slice(i,i+400).forEach(o=>{const r=F.doc(fs,o[1],o[2]);if(o[0]==='set')b.set(r,o[3]);else b.delete(r);});
+    b.commit().catch(e=>toast('Synchronisation refusée : '+(e.code||e.message)));
+  }
+}
+
+function rerenderSafe(){
+  const ae=document.activeElement;
+  if(ae&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName))return;
+  if(['home','tenants','tenant','receipt'].includes(S.view)||(role!=='admin'&&S.view==='settings'))render();
+}
+function afterSync(meta,changed){
+  if(!meta.fromCache)lastSync=new Date();
+  if(changed){persistLocal();rerenderSafe();}
+  updateNet();
+}
+function listen(){
+  const {fs,F}=CLOUD;
+  for(const [name,key] of [['tenants','tenants'],['payments','payments']]){
+    unsubs.push(F.onSnapshot(F.collection(fs,name),{includeMetadataChanges:true},snap=>{
+      const arr=[];snap.forEach(d=>arr.push(d.data()));
+      const changed=snap.docChanges().length>0;
+      db[key]=arr;pushed[key]={};arr.forEach(x=>{pushed[key][x.id]=sj(x);});
+      afterSync(snap.metadata,changed);
+    },e=>toast('Lecture refusée : '+(e.code||e.message))));
+  }
+  unsubs.push(F.onSnapshot(F.doc(fs,'meta','settings'),{includeMetadataChanges:true},snap=>{
+    let changed=false;
+    if(snap.exists()){db.settings=Object.assign(defaults().settings,snap.data());pushed.settings=sj(db.settings);changed=true;}
+    afterSync(snap.metadata,changed);
+  },e=>toast('Lecture refusée : '+(e.code||e.message))));
+}
+function stopListen(){unsubs.forEach(u=>{try{u();}catch(e){}});unsubs=[];}
+
+function loginV(){
+  return head('Connexion')+`<div class="card login">
+  <label>E-mail</label><input id="l_e" type="email" autocomplete="username" autocapitalize="none">
+  <label>Mot de passe</label><input id="l_p" type="password" autocomplete="current-password">
+  <div class="btns"><button class="btn" onclick="doLogin()">Se connecter</button></div>
+  <p class="hint" id="l_m" style="color:var(--bad)"></p>
+  <p class="hint">Les comptes sont créés par l'administrateur. Une connexion internet est nécessaire pour la première connexion.</p></div>`;
+}
+async function doLogin(){
+  const e=$('#l_e').value.trim(),p=$('#l_p').value;
+  if(!e||!p){$('#l_m').textContent='Saisissez l\'e-mail et le mot de passe.';return;}
+  if(!CLOUD){$('#l_m').textContent='Service indisponible : connexion internet requise.';return;}
+  $('#l_m').textContent='';
+  try{await CLOUD.Au.signInWithEmailAndPassword(CLOUD.auth,e,p);}catch(err){$('#l_m').textContent=authMsg(err);}
+}
+async function logout(){
+  if(role==='admin'&&!navigator.onLine){alert('Reconnectez-vous à internet avant de vous déconnecter, pour ne pas perdre de données non synchronisées.');return;}
+  if(!confirm('Se déconnecter ? Les données seront retirées de ce téléphone (elles restent sur le serveur).'))return;
+  stopListen();
+  try{if(role==='admin'&&CLOUD)await CLOUD.F.waitForPendingWrites(CLOUD.fs);}catch(e){}
+  try{await CLOUD.Au.signOut(CLOUD.auth);}catch(e){}
+  db=defaults();pushed.tenants={};pushed.payments={};pushed.settings='';
+  try{localStorage.removeItem(KEY);localStorage.removeItem(SESS);}catch(e){}
+}
+async function syncNow(){
+  if(!CLOUD)return;
+  if(!navigator.onLine){toast('Hors connexion : synchronisation au retour d\'internet.');return;}
+  try{
+    toast('Synchronisation…');
+    if(role==='admin'){pushDiff();await CLOUD.F.waitForPendingWrites(CLOUD.fs);}
+    await Promise.all(['tenants','payments'].map(c=>CLOUD.F.getDocsFromServer(CLOUD.F.collection(CLOUD.fs,c))));
+    lastSync=new Date();toast('Synchronisé ✔');if(S.view==='settings'&&role!=='admin')render();
+  }catch(e){toast('Échec : '+(e.code||e.message));}
+}
+function accountCard(){
+  if(!CLOUD_ON)return '';
+  const t=lastSync?lastSync.toLocaleString('fr-FR'):'—';
+  return `<div class="card"><h2>Compte et synchronisation</h2>
+  <p style="margin:0 0 6px">${esc(authUser?authUser.email:'')}<br><span class="badge ${role==='admin'?'b-m':'b-t'}">${role==='admin'?'Administrateur':'Utilisateur (lecture seule)'}</span></p>
+  <p class="hint">${navigator.onLine?'En ligne':'Hors connexion'} · Dernière synchronisation avec le serveur : ${t}</p>
+  <div class="btns"><button class="btn sec" onclick="syncNow()">🔄 Synchroniser maintenant</button><button class="btn red" onclick="logout()">Se déconnecter</button></div></div>`;
+}
+
+async function boot(){
+  if(!CLOUD_ON){role='admin';applyRole();render();return;}
+  applyRole();
+  app.innerHTML=head('Gestion Loyers')+'<div class="empty">Chargement…</div>';
+  try{
+    const [A,Au,F]=await Promise.all([import(FB_BASE+'firebase-app.js'),import(FB_BASE+'firebase-auth.js'),import(FB_BASE+'firebase-firestore.js')]);
+    const fapp=A.initializeApp(cfg);
+    const auth=Au.getAuth(fapp);
+    const fs=F.initializeFirestore(fapp,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})});
+    CLOUD={Au,F,auth,fs};
+    Au.onAuthStateChanged(auth,u=>{
+      stopListen();authUser=u;
+      if(!u){role='viewer';applyRole();go('login');return;}
+      role=roleOf(u.email);applyRole();
+      try{localStorage.setItem(SESS,JSON.stringify({email:u.email,role}));}catch(e){}
+      if(role==='admin'){pushDiff();}else{db=defaults();}
+      listen();
+      go('home');
+    });
+  }catch(e){
+    let ss=null;try{ss=JSON.parse(localStorage.getItem(SESS));}catch(x){}
+    if(ss){authUser={email:ss.email};role=ss.role;applyRole();render();toast('Mode hors connexion (données enregistrées sur ce téléphone).');}
+    else{app.innerHTML=head('Connexion')+'<div class="card empty">Connexion internet requise pour la première ouverture.<br><br><button class="btn" onclick="location.reload()">Réessayer</button></div>';}
+  }
+}
+window.addEventListener('online',()=>{updateNet();pushDiff();});
+window.addEventListener('offline',updateNet);
+
 /* ---------- Démarrage ---------- */
-render();
+boot();
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
 </script>

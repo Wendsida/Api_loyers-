@@ -1,10 +1,18 @@
 // Service worker : met toute l'application en cache pour un usage 100 % hors connexion.
 // Pour publier une mise à jour, changez le numéro de version ci-dessous.
-const CACHE = 'gestion-loyers-v1';
-const ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'gestion-loyers-v2';
+const ASSETS = ['./', 'index.html', 'firebase-config.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
+const FB = 'https://www.gstatic.com/firebasejs/10.14.1/';
+const SDK = ['firebase-app.js', 'firebase-auth.js', 'firebase-firestore.js'].map(f => FB + f);
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE).then(async c => {
+      await c.addAll(ASSETS);
+      // Bibliothèque de synchronisation : mise en cache si possible (sans bloquer l'installation).
+      await Promise.allSettled(SDK.map(u => c.add(u)));
+    }).then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -16,16 +24,21 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  const mine = url.origin === location.origin;
+  const sdk = url.href.startsWith(FB);
+  if (!mine && !sdk) return; // appels Firebase (données, connexion) : jamais interceptés
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then(hit =>
-      hit || fetch(e.request).then(res => {
-        if (res && res.ok && new URL(e.request.url).origin === location.origin) {
+    caches.match(req, { ignoreSearch: mine }).then(hit =>
+      hit || fetch(req).then(res => {
+        if (res && res.ok) {
           const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
+          caches.open(CACHE).then(c => c.put(req, copy));
         }
         return res;
-      }).catch(() => caches.match('index.html'))
+      }).catch(() => mine ? caches.match('index.html') : Response.error())
     )
   );
 });
